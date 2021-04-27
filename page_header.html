@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8" />
+<title>アニマルショップ　ドリーム</title>
+</head>
+<body>
+
+<th:block th:fragment="pageHeader">
+	<script src="http://code.jquery.com/jquery-3.4.1.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+	<link rel="stylesheet"
+			href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+	<script src="/js/util/stringUtil.js" th:src="@{/js/util/stringUtil.js}"></script>
+	<script src="/js/util/validator.js" th:src="@{/js/util/validator.js}"></script>
+	<script src="/js/dialogConfig.js" th:src="@{/js/dialogConfig.js}"></script>
+	<script>
+	/*<![CDATA[*/
+	//ログイン処理
+	$(() => {
+		$('button#login').on('click',authenticationLogin)
+	});
+	
+	let authenticationLogin = (event) => {
+		event.preventDefault();
+		$('#loginError').dialog(dialogConfig.loginError);
+		
+		let jsonString = {
+			'userName' : $('div.loginArea input[name=userName]').val(),
+			'password' : $('div.loginArea input[name=password]').val()
+		};
+		$.ajax({
+			type: 'POST',
+			url: '/sugar/auth/login',
+			data: JSON.stringify(jsonString),
+			contentType: 'application/json',
+			datatype: 'json',
+			scriptCharset: 'utf-8'
+		})
+		.then((result) => {
+			let user = JSON.parse(result);
+			//ログイン成功 
+			if(!isEmpty(user)){
+				//window.location.reload();
+				$('.welcomeMsg').text(`ようこそ！ ${user.userName} さん`);
+				$('div.loginArea input[name=userName]').val('');
+				$('div.loginArea input[name=password]').val('');
+				
+				$('button#login').addClass('hidden');
+				$('button#logout').removeClass('hidden');
+				$('#mypageMenu').removeClass('hidden');
+				$('#hiddenUserName').val(user.userName);
+			}
+			//ログイン失敗
+			else{
+				$('#hiddenUserName').val('');
+				$('#loginError').dialog('open');
+			}
+		}, () => {
+			alert('Error: ajax connection failed.');
+		});
+		
+	}
+	
+	// ログアウト処理
+	$(() => {
+		$('button#logout').on('click',authenticationLogout)
+	});
+	
+	let authenticationLogout = (event) => {
+		event.preventDefault();
+		
+		let jsonString = {
+			'userName' : $('input[name=userName]').val(),
+			'password' : $('input[name=password]').val()
+		};
+		$.ajax({
+			type: 'POST',
+			url: '/sugar/auth/logout',
+			data: JSON.stringify(jsonString),
+			contentType: 'application/json',
+			datatype: 'json',
+			scriptCharset: 'utf-8'
+		})
+		.then((result) => {
+			alert("ログアウトしました。");
+			window.location.href = '/sugar/';
+			/*
+			$('.welcomeMsg').text(`ようこそ！ ゲスト さん`);
+			$('div.loginArea input[name=userName]').val('');
+			$('div.loginArea input[name=password]').val('');
+			
+			$('button#login').removeClass('hidden');
+			$('button#logout').addClass('hidden');
+			$('#mypageMenu').addClass('hidden');
+			$('#hiddenUserName').val('');
+			*/
+			
+		}, () => {
+			alert('Error: ajax connection failed.');
+		});
+	}
+	</script>
+	<div class="headerTop">
+		<h1 class="logo"><a href="/sugar/">Animal Shop Dream </a></h1>
+		<span class="signup">
+			<a href="/sugar/user/" th:href="@{/sugar/user/}">
+			新規ユーザ登録はこちら
+			</a>
+		</span>
+		<span class="welcomeMsg"
+			th:text="'ようこそ！ '+${(loginSession == null || loginSession.getUserName() != null) ? loginSession.getUserName() : 'ゲスト'}+' さん'">
+		</span>
+	</div>
+	<nav>
+		<div class="loginArea">
+			<input type="text" name="userName" />
+			<input type="password" name="password" />
+			<input type="hidden" id="hiddenUserName" value="">
+			
+			<button id="logout" th:class="${loginSession == null || loginSession.isLoginFlag() == false ? 'hidden' : ''}">ログアウト</button>
+			<button id="login" th:class="${loginSession == null || loginSession.isLoginFlag() == false ? '' : 'hidden'}">ログイン</button>
+
+		</div>
+		<ul class="menu">
+			<li><a href="/sugar/cart/">カート</a></li>
+			<li id="mypageMenu" th:class="${loginSession == null || loginSession.isLoginFlag() == false ? 'hidden' : ''}">
+				<a href="/sugar/mypage/" th:href="@{/sugar/mypage/}">マイページ</a>
+			</li>
+		</ul>
+		
+	</nav>
+		<!-- Modal Dialog (ログインエラー) -->
+	<div th:insert="fragments/dialog_login_error::dialogLoginError"></div>
+	
+</th:block>
+
+
+</body>
+</html>
